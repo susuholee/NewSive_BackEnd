@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED 
+  REJECTED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
@@ -19,6 +25,11 @@ model User {
   setting UserSetting?
   notification Notification[]
 
+  // 친구 요청
+  sentFriendRequests     FriendRequest[] @relation("SentFriendRequests")
+  receivedFriendRequests FriendRequest[] @relation("ReceivedFriendRequests")
+
+  // 친구 관계
   friends        Friend[] @relation("UserFriends")
   friendOf       Friend[] @relation("UserFriendsReverse")
 }
@@ -54,4 +65,21 @@ model Friend {
   friend User @relation("UserFriendsReverse", fields: [friendUserId], references: [id])
 
   @@unique([userId, friendUserId])
+}
+
+model FriendRequest {
+  id           Int  @id @default(autoincrement())
+
+  userId       Int
+  friendUserId Int
+
+  status      FriendRequestStatus @default(PENDING)
+
+  createdAt     DateTime @default(now())
+
+  user          User @relation("SentFriendRequests", fields: [userId], references: [id])
+  friendUser    User @relation("ReceivedFriendRequests", fields: [friendUserId], references: [id])
+
+  @@unique([userId, friendUserId])
+
 }
