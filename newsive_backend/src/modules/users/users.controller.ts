@@ -8,19 +8,19 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  getUsers() {
-    return this.usersService.findAll();
+  async getUsers() {
+    return await this.usersService.findAll();
   }
 
   @Post()
-  create(@Body() dto: CreateUserDto) {
+  async create(@Body() dto: CreateUserDto) {
     console.log("여기야 DTO",dto); 
-    return this.usersService.create(dto);
+    return await this.usersService.create(dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMyInfo(@Req () req) {
-    return this.usersService.findMyInfo(req.user.userId)
+  async getMyInfo(@Req () req) {
+    return await this.usersService.findMyInfo(req.user.userId)
   }
 }
