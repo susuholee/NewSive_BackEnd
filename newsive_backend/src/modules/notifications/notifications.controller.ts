@@ -8,14 +8,25 @@ export class NotificationController {
     constructor(private readonly notificationService : NotificationService) {}
 
     @Get()
-    async getNotifications(@Req() req) {
-        const userId = req.user.id;
-        return await this.notificationService.getNotificationByUser(userId);
-    }
+  async getNotifications(@Req() req) {
+    return await this.notificationService.getNotificationByUser(req.user.id);
+  }
 
-    @Patch(':id')
-    async notificationRead(@Param('id', ParseIntPipe) id : number, @Req() req) {
-        const userId = req.user.id;
-        return await this.notificationService.notificationRead(id, userId)
-    }
+  @Get('unread')
+  async unreadCount(@Req() req) {
+    return await this.notificationService.getUnreadCount(req.user.id);
+  }
+
+  @Patch('read')
+  async readAll(@Req() req) {
+    return await this.notificationService.readAll(req.user.id);
+  }
+
+  @Patch(':id')
+  async readOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req,
+  ) {
+    return await this.notificationService.notificationRead(id, req.user.id);
+  }
 }

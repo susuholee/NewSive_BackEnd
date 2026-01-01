@@ -13,6 +13,11 @@ enum FriendRequestStatus {
   REJECTED
 }
 
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
@@ -46,6 +51,7 @@ model Notification {
   id        Int      @id @default(autoincrement())
   userId    Int
 
+  type      NotificationType @default(FRIEND_REQUEST)
   message   String
   link      String?
 
@@ -54,6 +60,8 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id])
 }
+
+
 
 model Friend {
   id           Int      @id @default(autoincrement())

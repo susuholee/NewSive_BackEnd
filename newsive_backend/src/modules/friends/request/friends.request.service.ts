@@ -1,13 +1,16 @@
 import { Injectable, BadRequestException} from "@nestjs/common";
+import { NotificationType } from "@prisma/client";
 import { PrismaService } from "src/common/prisma/prisma.service";
+import { NotificationService } from "src/modules/notifications/notifications.service";
+
 
 @Injectable()
 export class FriendRequestsService {
-  constructor(private readonly prisma : PrismaService) {}
+  constructor(private readonly prisma : PrismaService, private readonly notificationService : NotificationService) {}
 
 
-    // 친구 요청 생성
-  async createFriendRequest(userId: number, friendUserId: number) {
+    // 친구 요청시 알림 생성
+    async createFriendRequest(userId: number, friendUserId: number) {
     // 자기 자신에게 요청 금지
     if (userId === friendUserId) {
       throw new BadRequestException('자기 자신에게는 친구요청을 보낼 수 없습니다');
@@ -49,13 +52,22 @@ export class FriendRequestsService {
     }
 
     // 요청 생성
-    return this.prisma.friendRequest.create({
+   const request = await this.prisma.friendRequest.create({
       data: {
         userId,
         friendUserId,
       },
     });
-  }
+
+    await this.notificationService.createNotification({
+      userId : friendUserId,
+      type : NotificationType.FRIEND_REQUEST,
+      message : "새로운 친구 요청이 들어왔습니다!",
+      link : '/freind_requests',
+    })
+
+    return request;
+    }
 
     // 받은 요청 조회
     async getReceivedRequests(userId: number) {
@@ -115,7 +127,7 @@ export class FriendRequestsService {
     throw new BadRequestException('이미 처리된 요청입니다');
   }
 
-  return this.prisma.$transaction(async (tx) => {
+  const result = await this.prisma.$transaction(async (tx) => {
     // 친구 관계 양방향 생성
     await tx.friend.createMany({
       data: [
@@ -137,6 +149,14 @@ export class FriendRequestsService {
       data: { status: 'ACCEPTED' },
     });
   });
+
+  await this.notificationService.createNotification({
+    userId : request.userId,
+    type : NotificationType.FRIEND_ACCEPTED,
+    message : "친구 요청이 수락되었습니다",
+    link : "/friends"
+  })
+
     }
 
     // 거절한 요청
