@@ -3,63 +3,61 @@ import { PrismaService } from "src/common/prisma/prisma.service";
 
 @Injectable()
 export class FriendRequestsService {
-    constructor(private readonly prisma : PrismaService) {}
+  constructor(private readonly prisma : PrismaService) {}
 
-    async sendFriendRequest(userId: number, friendUserId: number) {
-    // 본인에게 요청 방지
+
+    // 친구 요청 생성
+  async createFriendRequest(userId: number, friendUserId: number) {
+    // 자기 자신에게 요청 금지
     if (userId === friendUserId) {
-        throw new BadRequestException('자기 자신에게는 친구요청을 보낼 수 없습니다');
+      throw new BadRequestException('자기 자신에게는 친구요청을 보낼 수 없습니다');
     }
 
-  // 이미 친구인지 확인
-  const alreadyFriend = await this.prisma.friend.findFirst({
-    where: {
-      OR: [
-        { userId, friendUserId },
-        { userId: friendUserId, friendUserId: userId },
-      ],
-    },
-  });
+    // 이미 친구인지 확인
+    const alreadyFriend = await this.prisma.friend.findFirst({
+      where: {
+        OR: [
+          { userId, friendUserId },
+          { userId: friendUserId, friendUserId: userId },
+        ],
+      },
+    });
 
-  if (alreadyFriend) {
-    throw new BadRequestException('이미 친구입니다');
-  }
+    if (alreadyFriend) {
+      throw new BadRequestException('이미 친구입니다');
+    }
 
-  // 기존 요청 존재 여부 확인
-  const alreadyRequest = await this.prisma.friendRequest.findFirst({
-    where: {
-      OR: [
-        { userId, friendUserId },
-        { userId: friendUserId, friendUserId: userId },
-      ],
-    },
-  });
+    // 기존 요청 존재 여부 확인
+    const alreadyRequest = await this.prisma.friendRequest.findFirst({
+      where: {
+        OR: [
+          { userId, friendUserId },
+          { userId: friendUserId, friendUserId: userId },
+        ],
+      },
+    });
 
     if (alreadyRequest) {
-     switch (alreadyRequest.status) {
-    case 'PENDING':
-      throw new BadRequestException('이미 친구 요청이 존재합니다');
-
-    case 'REJECTED':
-      throw new BadRequestException('이미 거절된 요청입니다');
-
-    case 'ACCEPTED':
-      throw new BadRequestException('이미 친구입니다');
-
-    default:
-      break;
+      switch (alreadyRequest.status) {
+        case 'PENDING':
+          throw new BadRequestException('이미 친구 요청이 존재합니다');
+        case 'REJECTED':
+          throw new BadRequestException('이미 거절된 요청입니다');
+        case 'ACCEPTED':
+          throw new BadRequestException('이미 친구입니다');
+      }
     }
+
+    // 요청 생성
+    return this.prisma.friendRequest.create({
+      data: {
+        userId,
+        friendUserId,
+      },
+    });
   }
 
-  return this.prisma.friendRequest.create({
-    data: {
-      userId,
-      friendUserId,
-    },
-  });
-}
-
-
+    // 받은 요청 조회
     async getReceivedRequests(userId: number) {
     return this.prisma.friendRequest.findMany({
       where: {
@@ -67,14 +65,23 @@ export class FriendRequestsService {
         status: 'PENDING',
       },
       include: {
-        user: true,
+        user: {
+          select :{
+            id : true,
+            username : true,
+            nickname : true,
+            createdAt : true,
+          }
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
     }
-    async getSendRequests(userId: number) {
+
+    // 보낸 요청 조회
+    async getSentRequests(userId: number) {
     return this.prisma.friendRequest.findMany({
         where: {
         userId,
@@ -89,6 +96,7 @@ export class FriendRequestsService {
     });
     }
 
+    // 수락한 요청
     async acceptFriendRequest(requestId: number, userId: number) {
   const request = await this.prisma.friendRequest.findUnique({
     where: { id: requestId },
@@ -131,6 +139,7 @@ export class FriendRequestsService {
   });
     }
 
+    // 거절한 요청
     async rejectFriendRequest(requestId: number, userId: number) {
     const request = await this.prisma.friendRequest.findUnique({
       where: { id: requestId },
@@ -155,5 +164,5 @@ export class FriendRequestsService {
       where: { id: requestId },
       data: { status: 'REJECTED' },
     });
-  }
+    }
 }

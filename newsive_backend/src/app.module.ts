@@ -11,7 +11,7 @@ import { FriendsModule } from './modules/friends/friends.module';
     UsersModule,
     AuthModule,
     NotificationModule,
-    FriendsModule
+    FriendsModule,
   ],
 })
 export class AppModule {}
