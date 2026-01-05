@@ -20,6 +20,17 @@ export class AuthController {
     });
         return {user}
     }
+    
+    @Post('logout')
+    async logout(@Res({passthrough : true}) res : Response) {
+        res.clearCookie('accessToken', {
+            httpOnly : true,
+            sameSite : 'lax',
+            secure : false,
+        });
+
+        return {message : "로그아웃 성공"}
+    }
 
     @UseGuards(JwtAuthGuard)
     @Get('me')
