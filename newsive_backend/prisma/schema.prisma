@@ -13,45 +13,65 @@ enum FriendRequestStatus {
   REJECTED
 }
 
+
 enum NotificationType {
   FRIEND_REQUEST
   FRIEND_ACCEPTED
+  NEWS_BREAKING
+  NEWS_KEYWORD
+  SYSTEM
+}
+
+
+enum Gender {
+  male
+  female
+  other
 }
 
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
   password  String
-  nickname  String?
+  nickname  String   @unique
+
+  birthday  DateTime?
+  gender    Gender?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  setting UserSetting?
-  notification Notification[]
 
-  // 친구 요청
+  setting        UserSetting?
+  notifications  Notification[]
+
+  friends  Friend[] @relation("UserFriends")
+  friendOf Friend[] @relation("UserFriendsReverse")
+
   sentFriendRequests     FriendRequest[] @relation("SentFriendRequests")
   receivedFriendRequests FriendRequest[] @relation("ReceivedFriendRequests")
-
-  // 친구 관계
-  friends        Friend[] @relation("UserFriends")
-  friendOf       Friend[] @relation("UserFriendsReverse")
 }
+
 
 model UserSetting {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique
-  allowNotify Boolean  @default(true)
+  id Int @id @default(autoincrement())
+  userId Int @unique
 
-  user        User     @relation(fields: [userId], references: [id])
+  allowNotification Boolean @default(true)
+  allowBreakingNews Boolean @default(true)
+  allowKeywordAlert Boolean @default(true)
+
+  defaultRegion String?
+
+  user User @relation(fields: [userId], references: [id])
 }
+
 
 model Notification {
   id        Int      @id @default(autoincrement())
   userId    Int
 
-  type      NotificationType @default(FRIEND_REQUEST)
+  type      NotificationType
   message   String
   link      String?
 
@@ -63,31 +83,31 @@ model Notification {
 
 
 
+
 model Friend {
   id           Int      @id @default(autoincrement())
   userId       Int
   friendUserId Int
   createdAt    DateTime @default(now())
 
-  user User @relation("UserFriends", fields: [userId], references: [id])
+  user   User @relation("UserFriends", fields: [userId], references: [id])
   friend User @relation("UserFriendsReverse", fields: [friendUserId], references: [id])
 
   @@unique([userId, friendUserId])
 }
 
+
 model FriendRequest {
-  id           Int  @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   userId       Int
   friendUserId Int
 
-  status      FriendRequestStatus @default(PENDING)
+  status    FriendRequestStatus @default(PENDING)
+  createdAt DateTime @default(now())
 
-  createdAt     DateTime @default(now())
-
-  user          User @relation("SentFriendRequests", fields: [userId], references: [id])
-  friendUser    User @relation("ReceivedFriendRequests", fields: [friendUserId], references: [id])
+  user       User @relation("SentFriendRequests", fields: [userId], references: [id])
+  friendUser User @relation("ReceivedFriendRequests", fields: [friendUserId], references: [id])
 
   @@unique([userId, friendUserId])
-
 }
