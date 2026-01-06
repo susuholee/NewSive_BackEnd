@@ -1,4 +1,4 @@
-import { BadRequestException,ConflictException,Injectable} from '@nestjs/common';
+import { BadRequestException,ConflictException,Injectable, NotFoundException, UnauthorizedException} from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create_users_dto';
@@ -66,61 +66,159 @@ export class UsersService {
     };
   }
 
-  async create(dto: CreateUserDto) {
-    const { username,password,passwordConfirm,nickname,birthday,gender} = dto;
+  async createUser(dto: CreateUserDto) {
+  const {
+    username,
+    password,
+    passwordConfirm,
+    nickname,
+    birthday,
+    gender,
+  } = dto;
+
+  if (password !== passwordConfirm) {
+    throw new BadRequestException('비밀번호가 일치하지 않습니다');
+  }
 
 
-    if (password !== passwordConfirm) {
-      throw new BadRequestException('비밀번호가 일치하지 않습니다');
-    }
+  const existUsername = await this.prisma.user.findUnique({
+    where: { username },
+  });
 
- 
-    const existUsername = await this.prisma.user.findUnique({
-      where: { username },
+  if (existUsername) {
+    throw new ConflictException('이미 존재하는 아이디입니다');
+  }
+
+  const existNickname = await this.prisma.user.findUnique({
+    where: { nickname },
+  });
+
+  if (existNickname) {
+    throw new ConflictException('이미 사용 중인 닉네임입니다');
+  }
+
+
+  const hashedPwd = await bcrypt.hash(password, 10);
+
+  const userData: any = {
+    username,
+    password: hashedPwd,
+    nickname,
+  };
+
+  if (birthday) {
+    userData.birthday = new Date(birthday);
+  }
+
+  if (gender) {
+    userData.gender = gender;
+  }
+
+
+  const user = await this.prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: userData,
     });
 
-    if (existUsername) {
-      throw new ConflictException('이미 존재하는 아이디입니다');
-    }
-
-   
-    const existNickname = await this.prisma.user.findUnique({
-      where: { nickname },
+    await tx.userSetting.create({
+      data: {
+        userId: user.id,
+      },
     });
 
-    if (existNickname) {
-      throw new ConflictException('이미 사용 중인 닉네임입니다');
+    return user;
+  });
+
+  return {
+    id: user.id,
+    username: user.username,
+    nickname: user.nickname,
+    createdAt: user.createdAt,
+  };
+}
+
+  async changeNickname(userId: number, nickname : string) {
+    const user = await this.prisma.user.findUnique({
+      where : {id :  userId},
+    });
+
+    if (!user) {
+      throw new NotFoundException('유저를 찾을 수 없습니다.');
     }
 
-  
-    const hashedPwd = await bcrypt.hash(password, 10);
-
- 
-    const user = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          username,
-          password: hashedPwd,
-          nickname,
-          birthday: new Date(birthday),
-          gender,
-        },
-      });
-
-      await tx.userSetting.create({
-        data: {
-          userId: user.id,
-        },
-      });
-
-      return user;
+    const updateUser = await this.prisma.user.update({
+      where : { id : userId},
+      data : { nickname }
     });
 
     return {
-      id: user.id,
-      username: user.username,
-      nickname: user.nickname,
-      createdAt: user.createdAt,
+      message : '닉네임이 변경되었습니다',
+      nickname : updateUser.nickname,
     };
   }
+
+  async changePassword(userId : number, currentPassword : string, newPassword : string) {
+    const user = await this.prisma.user.findUnique({
+      where : {id : userId},
+    });
+
+   if (!user) {
+      throw new NotFoundException('유저를 찾을 수 없습니다.');
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('현재 패스워드가 일치하지 않습니다');
+    }
+
+    const hashedPwd = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where : {id : userId},
+      data : {password : hashedPwd},
+    });
+
+    return {
+      message : '비밀번호가 변경되었습니다.'
+    }
+  }
+
+ async deleteUser(userId: number) {
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new NotFoundException('유저를 찾을 수 없습니다.');
+  }
+
+  await this.prisma.$transaction([
+    this.prisma.userSetting.deleteMany({
+      where: { userId },
+    }),
+
+
+    this.prisma.notification.deleteMany({
+      where: { userId },
+    }),
+
+    this.prisma.friend.deleteMany({
+      where: {
+        OR: [
+          { userId },
+          { friendUserId: userId },
+        ],
+      },
+    }),
+
+    this.prisma.user.delete({
+      where: { id: userId },
+    }),
+  ]);
+
+  return {
+    message: '회원탈퇴가 완료되었습니다.',
+  };
+}
 }
