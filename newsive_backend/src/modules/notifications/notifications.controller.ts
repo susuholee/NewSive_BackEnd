@@ -14,19 +14,17 @@ export class NotificationController {
 
   @Get('unread')
   async unreadCount(@Req() req) {
-    return await this.notificationService.getUnreadCount(req.user.id);
-  }
+    const count = await this.notificationService.getUnreadCount(req.user.id);
+      return { unreadCount: count };
+    }
 
-  @Patch('read')
+  @Patch('read_all')
   async readAll(@Req() req) {
     return await this.notificationService.readAll(req.user.id);
   }
 
-  @Patch(':id')
-  async readOne(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req,
-  ) {
-    return await this.notificationService.notificationRead(id, req.user.id);
+  @Patch(':id/read')
+  async readOne(@Param('id', ParseIntPipe) id: number,@Req() req) {
+    return this.notificationService.notificationRead(id, req.user.id);
   }
 }

@@ -63,7 +63,7 @@ export class FriendRequestsService {
       userId : friendUserId,
       type : NotificationType.FRIEND_REQUEST,
       message : "새로운 친구 요청이 들어왔습니다!",
-      link : '/freind_requests',
+      link : '/friend_requests',
     })
 
     return request;
