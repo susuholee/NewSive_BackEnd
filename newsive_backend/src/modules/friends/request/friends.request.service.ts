@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException} from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException} from "@nestjs/common";
 import { NotificationType } from "@prisma/client";
 import { PrismaService } from "src/common/prisma/prisma.service";
 import { NotificationService } from "src/modules/notifications/notifications.service";
@@ -67,6 +67,23 @@ export class FriendRequestsService {
     })
 
     return request;
+    }
+
+    async createFriendRequestByNickname(userId: number, nickname: string) {
+      if (!nickname?.trim()) {
+        throw new BadRequestException('닉네임을 입력해주세요.');
+      }
+
+      const targetUser = await this.prisma.user.findUnique({
+        where: { nickname },
+        select: { id: true },
+      });
+
+      if (!targetUser) {
+        throw new NotFoundException('존재하지 않는 유저입니다.');
+      }
+
+      return this.createFriendRequest(userId, targetUser.id);
     }
 
     // 받은 요청 조회

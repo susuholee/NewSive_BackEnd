@@ -9,26 +9,33 @@ export class FriendRequestsController {
   constructor( private readonly friendRequestsService: FriendRequestsService) {}
 
   @Post()
-    create(@Body('receiverId') receiverId: number,@User() user) {
-      return this.friendRequestsService.createFriendRequest(user.id,receiverId);
+    async create(@Body('receiverId') receiverId: number,@User() user) {
+      return await this.friendRequestsService.createFriendRequest(user.id,receiverId);
     }
 
+  @Post('nickname')
+  async createByNickname(@Body('nickname') nickname: string, @User() user) {
+    return  await this.friendRequestsService.createFriendRequestByNickname(user.id, nickname);
+  }
+
   @Get('received')
-    getReceived(@User() user) {
-      return this.friendRequestsService.getReceivedRequests(user.id);
+   async  getReceived(@User() user) {
+      return  await this.friendRequestsService.getReceivedRequests(user.id);
     }
 
   @Get('sent')
-    getSent(@User() user) {
-      return this.friendRequestsService.getSentRequests(user.id);
+   async getSent(@User() user) {
+      return await this.friendRequestsService.getSentRequests(user.id);
     }
 
   @Patch(':id/accept')
-    acceptFriendRequest(@Param('id') id: string, @User() user) {
-        return this.friendRequestsService.acceptFriendRequest( Number(id), user.id);
+    async acceptFriendRequest(@Param('id') id: string, @User() user) {
+        return await this.friendRequestsService.acceptFriendRequest( Number(id), user.id);
     }
   @Patch(':id/reject')
-    rejectFriendRequest(@Param('id') id: string, @User() user) {
-        return this.friendRequestsService.rejectFriendRequest( Number(id), user.id);
+   async rejectFriendRequest(@Param('id') id: string, @User() user) {
+        return  await this.friendRequestsService.rejectFriendRequest( Number(id), user.id);
     }
+
+    
 }

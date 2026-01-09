@@ -4,6 +4,7 @@ import { CreateUserDto } from './dto/create_users_dto';
 import { JwtAuthGuard } from '../auth/guard/jwt_auth_guard';
 import { ChangeNicknameDto } from './dto/change_nickname_dto';
 import { ChangePasswordDto } from './dto/change_password_dto';
+import { UpdateNotificationSettingDto } from './dto/update_notification_setting.dto';
 
 @Controller('users')
 export class UsersController {
@@ -40,12 +41,27 @@ export class UsersController {
   @Put('me/password')
   async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
     console.log('req.user:', req.user);
-    return this.usersService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
+    return  await this.usersService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('me')
   async deleteUser(@Req() req) {
-    return this.usersService.deleteUser(req.user.id)
+    return await this.usersService.deleteUser(req.user.id)
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/settings/notification')
+  async getMyNotificationSetting(@Req() req) {
+    return await this.usersService.getNotificationSetting(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('me/settings/notification')
+  async updateMyNotificationSetting(@Req() req, @Body() dto: UpdateNotificationSettingDto) {
+    return await this.usersService.updateNotificationSetting(req.user.id,dto);
+  }
+
+
+
 }

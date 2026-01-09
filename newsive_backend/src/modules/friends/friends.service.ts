@@ -28,6 +28,12 @@ export class FriendsService {
 
   // 친구 추가 로직
   async addFriend(userId: number, friendUserId: number) {
+
+    if (!userId || !friendUserId) {
+    throw new BadRequestException('잘못된 사용자 정보입니다.');
+    }
+
+
     // 본인 추가 방지
     if (userId === friendUserId) {
       throw new BadRequestException('자기 자신을 친구로 추가할 수 없습니다.');
@@ -89,4 +95,11 @@ export class FriendsService {
 
     return { message: '친구 삭제 완료' };
   }
+
+
+  
+
+
+
+
 }

@@ -10,21 +10,24 @@ export class FriendsController {
 
   @Get()
   async getFriends(@Req() req) {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     return await this.friendsService.getFriends(userId);
   }
 
 
   @Post()
   async addFriend(@Req() req, @Body('friendUserId') friendUserId: number) {
-    const userId = req.user.userId;
+    const userId =  req.user.id;
     return await this.friendsService.addFriend(userId, friendUserId);
   }
 
 
   @Delete()
   async removeFriend(@Req() req, @Body('friendUserId') friendUserId: number) {
-    const userId = req.user.userId;
+    const userId =  req.user.id;
     return await this.friendsService.removeFriend(userId, friendUserId);
   }
+
+
+
 }

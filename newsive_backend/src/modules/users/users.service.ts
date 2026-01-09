@@ -2,6 +2,7 @@ import { BadRequestException,ConflictException,Injectable, NotFoundException, Un
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create_users_dto';
+import { UpdateNotificationSettingDto } from './dto/update_notification_setting.dto';
 
 @Injectable()
 export class UsersService {
@@ -46,25 +47,32 @@ export class UsersService {
   }
 
   return { available: true };
-}
+  }
 
   async findMyInfo(userId: number) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        setting: true,
-      },
-    });
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      username: true,
+      nickname: true,
+    },
+  });
 
-    if (!user) return null;
-
-    return {
-      id: user.id,
-      username: user.username,
-      nickname: user.nickname,
-      allowNotification: user.setting?.allowNotification ?? true,
-    };
+  if (!user) {
+    throw new NotFoundException('유저를 찾을 수 없습니다.');
   }
+
+  const setting = await this.ensureUserSetting(userId);
+
+  return {
+    id: user.id,
+    username: user.username,
+    nickname: user.nickname,
+    allowNotification: setting.allowNotification,
+  };
+  }
+
 
   async createUser(dto: CreateUserDto) {
   const {
@@ -135,7 +143,7 @@ export class UsersService {
     nickname: user.nickname,
     createdAt: user.createdAt,
   };
-}
+  }
 
   async changeNickname(userId: number, nickname : string) {
     const user = await this.prisma.user.findUnique({
@@ -184,7 +192,7 @@ export class UsersService {
     }
   }
 
- async deleteUser(userId: number) {
+  async deleteUser(userId: number) {
   const user = await this.prisma.user.findUnique({
     where: { id: userId },
   });
@@ -220,5 +228,71 @@ export class UsersService {
   return {
     message: '회원탈퇴가 완료되었습니다.',
   };
-}
+  }
+
+  async ensureUserSetting(userId: number) {
+    const setting = await this.prisma.userSetting.findUnique({
+      where : { userId},
+    });
+
+    if (setting) return setting;
+
+    return this.prisma.userSetting.create({
+      data: {userId},
+    });
+  }
+
+  async getNotificationSetting(userId: number) {
+
+    const user = await this.prisma.user.findUnique({
+      where : { id : userId},
+      select : { id : true},
+    });
+
+    if(!user){
+      throw new NotFoundException('유저를 찾을 수 없습니다');
+    }
+
+    const setting = await this.ensureUserSetting(userId);
+
+    return {
+      allowNotification : setting.allowNotification,
+      allowBreakingNews : setting.allowBreakingNews,
+      allowKeywordAlert : setting.allowKeywordAlert,
+      defaultRegion : setting.defaultRegion
+    };
+  }
+
+  async updateNotificationSetting(userId: number, dto : UpdateNotificationSettingDto){
+    const user = await this.prisma.user.findUnique({
+      where : {id: userId},
+      select :  {id: true},
+    });
+
+    if(!user){
+      throw new NotFoundException('유저를 찾을 수 없습니다.');
+    }
+
+    await this.ensureUserSetting(userId);
+
+     return this.prisma.userSetting.update({
+    where: { userId },
+    data: {
+      ...(dto.allowNotification !== undefined && {
+        allowNotification: dto.allowNotification,
+      }),
+      ...(dto.allowBreakingNews !== undefined && {
+        allowBreakingNews: dto.allowBreakingNews,
+      }),
+      ...(dto.allowKeywordAlert !== undefined && {
+        allowKeywordAlert: dto.allowKeywordAlert,
+      }),
+      ...(dto.defaultRegion !== undefined && {
+        defaultRegion: dto.defaultRegion,
+      }),
+    },
+  });
+  }
+
+
 }
