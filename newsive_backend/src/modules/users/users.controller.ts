@@ -5,63 +5,46 @@ import { JwtAuthGuard } from '../auth/guard/jwt_auth_guard';
 import { ChangeNicknameDto } from './dto/change_nickname_dto';
 import { ChangePasswordDto } from './dto/change_password_dto';
 import { UpdateNotificationSettingDto } from './dto/update_notification_setting.dto';
+import { User } from '../auth/decorators/user.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
-  async getUsers() {
-    return await this.usersService.findAll();
-  }
-
-  @Get('availability')
-  async checkUsernameAvailability(@Query('username') username: string) {
-    return this.usersService.checkUsername(username);
-  }
-
-  @Post() 
-  async create(@Body() dto: CreateUserDto) {
-    return await this.usersService.createUser(dto);
-  }
-
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getMyInfo(@Req () req) {
-    return await this.usersService.findMyInfo(req.user.id)
+  async getMyInfo(@User('userId') userId: number) {
+    return  await this.usersService.findMyInfo(userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('me/nickname')
-  async changeNickname(@Req() req, @Body() dto: ChangeNicknameDto) {
-    return await this.usersService.changeNickname(req.user.id, dto.nickname);
+  async changeNickname(@User('userId') userId: number,@Body() dto: ChangeNicknameDto,
+  ) {
+    return await this.usersService.changeNickname(userId, dto.nickname);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('me/password')
-  async changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
-    console.log('req.user:', req.user);
-    return  await this.usersService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
+  async changePassword(@User('userId') userId: number,@Body() dto: ChangePasswordDto) {
+    return  await this.usersService.changePassword(userId,dto.currentPassword,dto.newPassword);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('me')
-  async deleteUser(@Req() req) {
-    return await this.usersService.deleteUser(req.user.id)
+  async deleteUser(@User('userId') userId: number) {
+    return await this.usersService.deleteUser(userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('me/settings/notification')
-  async getMyNotificationSetting(@Req() req) {
-    return await this.usersService.getNotificationSetting(req.user.id);
+  async getMyNotificationSetting(@User('userId') userId: number) {
+    return await this.usersService.getNotificationSetting(userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('me/settings/notification')
-  async updateMyNotificationSetting(@Req() req, @Body() dto: UpdateNotificationSettingDto) {
-    return await this.usersService.updateNotificationSetting(req.user.id,dto);
+  async updateMyNotificationSetting(@User('userId') userId: number,@Body() dto: UpdateNotificationSettingDto) {
+    return  await this.usersService.updateNotificationSetting(userId, dto);
   }
-
-
-
 }
