@@ -29,6 +29,12 @@ enum Gender {
   other
 }
 
+enum RoomType {
+  DIRECT
+  GROUP
+  GLOBAL
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
@@ -50,6 +56,9 @@ model User {
 
   sentFriendRequests     FriendRequest[] @relation("SentFriendRequests")
   receivedFriendRequests FriendRequest[] @relation("ReceivedFriendRequests")
+
+  chatRooms ChatRoomMember[]
+  messages  Message[]
 }
 
 
@@ -110,4 +119,38 @@ model FriendRequest {
   friendUser User @relation("ReceivedFriendRequests", fields: [friendUserId], references: [id])
 
   @@unique([userId, friendUserId])
+}
+
+model ChatRoom {
+  id  String @id @default(cuid())
+  type RoomType @default(DIRECT)
+  createdAt DateTime @default(now())
+
+  members   ChatRoomMember[]
+  messages  Message[]
+}
+
+model ChatRoomMember {
+  id        String   @id @default(cuid())
+  roomId   String
+  userId   Int
+  joinedAt DateTime @default(now())
+
+  room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  roomId   String
+  senderId  Int
+  content  String
+  createdAt DateTime @default(now())
+
+  room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender   User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
 }
