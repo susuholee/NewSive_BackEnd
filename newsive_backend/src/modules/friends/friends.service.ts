@@ -8,7 +8,12 @@ export class FriendsService {
 
   async getFriends(userId: number) {
     return this.prisma.friend.findMany({
-      where: { userId },
+      where: {
+        userId,
+        NOT : {
+          friendUserId: userId,
+        }
+      },
       select: {
         id: true,
         friendUserId: true,
@@ -23,6 +28,7 @@ export class FriendsService {
       },
     });
   }
+
 
 
 
@@ -90,6 +96,16 @@ export class FriendsService {
           { userId, friendUserId },
           { userId: friendUserId, friendUserId: userId },
         ],
+      },
+    });
+
+    await this.prisma.friendRequest.deleteMany({
+      where: {
+        OR: [
+          { userId, friendUserId },
+          { userId: friendUserId, friendUserId: userId },
+        ],
+        status: 'ACCEPTED',
       },
     });
 

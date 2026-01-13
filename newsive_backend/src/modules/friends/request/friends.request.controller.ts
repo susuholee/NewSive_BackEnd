@@ -26,7 +26,6 @@ export class FriendRequestsController {
 
   @Get('received')
   async getReceived(@User('userId') userId: number) {
-    console.log("받은 요청 정보", userId)
     return await this.friendRequestsService.getReceivedRequests(userId);
   }
 
@@ -36,10 +35,7 @@ export class FriendRequestsController {
   }
 
   @Patch(':id/accept')
-  async acceptFriendRequest(
-    @Param('id') id: string,
-    @User('userId') userId: number,
-  ) {
+  async acceptFriendRequest(@Param('id') id: string,@User('userId') userId: number) {
     return await this.friendRequestsService.acceptFriendRequest(Number(id), userId);
   }
 

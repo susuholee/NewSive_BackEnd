@@ -144,6 +144,10 @@ export class FriendRequestsService {
     throw new BadRequestException('이미 처리된 요청입니다');
   }
 
+  if (request.userId === request.friendUserId) {
+    throw new BadRequestException('본인은 친구로 추가할 수 없습니다');
+  }
+
   const result = await this.prisma.$transaction(async (tx) => {
     // 친구 관계 양방향 생성
     await tx.friend.createMany({
