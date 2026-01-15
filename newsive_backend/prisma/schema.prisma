@@ -147,6 +147,7 @@ model Message {
   roomId   String
   senderId  Int
   content  String
+  isDeleted Boolean @default(false)
   createdAt DateTime @default(now())
 
   room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
