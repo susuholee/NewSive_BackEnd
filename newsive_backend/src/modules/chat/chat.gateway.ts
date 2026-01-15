@@ -3,6 +3,7 @@ import {Server, Socket} from "socket.io";
 import { ChatService } from "./chat.service";
 import { JoinRoomDto } from "./dto/join_room.dto";
 import { CreateMessageDto } from "./dto/create_message.dto";
+import { DeleteMessageDto } from "./dto/delete_message.dto";
 
 @WebSocketGateway({
     namespace : '/chat',
@@ -89,6 +90,28 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.server.to(dto.roomId).emit('chat:message', message);
 
         console.log(`[채팅][전송요청] user=${user.id}, room=${dto.roomId}, content=${dto.content}`);
+    }
+
+    @SubscribeMessage('chat:delete')
+    async handleDelete(@MessageBody() dto: DeleteMessageDto, @ConnectedSocket() client: Socket){
+        const user = client.data.user;
+
+        if(!user?.id){
+            client.emit('chat:error', {message: '로그인이 필요합니다'});
+            return;
+        }
+
+        let deletedMessage;
+        try {
+            deletedMessage = await this.chatService.deleteMessage(dto.messageId, user.id);
+        } catch (error) {
+            client.emit('chat:error', {message: error.message});
+            return;
+        }
+
+        this.server.to(deletedMessage.roomId).emit('chat:deleted', {messageId: deletedMessage.id});
+
+        console.log(`[채팅][삭제] user=${user.id}, message=${deletedMessage.id}`);
     }
 
 }

@@ -103,11 +103,41 @@ export class ChatService {
       throw new ForbiddenException('채팅방 멤버가 아닙니다.');
     }
 
-    return this.prisma.message.findMany({
-      where: { roomId },
-      orderBy: { createdAt: 'desc' },
-      take,
+    const messages = await this.prisma.message.findMany({
+        where : {roomId},
+        orderBy : {createdAt: 'asc'},
+        take,
     });
-  }
+    return messages.map((message) => ({
+        ...message,
+        content: message.isDeleted ? '삭제된 메시지입니다' : message.content, 
+    }));
+
+    }
+
+    async deleteMessage(messageId: string, userId: number) {
+        const message = await this.prisma.message.findUnique({
+            where: { id: messageId },
+        });
+        if (!message) {
+            throw new NotFoundException('메시지를 찾을 수 없습니다.');
+        }
+
+        if (message.senderId !== userId) {
+            throw new ForbiddenException('본인이 보낸 메시지만 삭제할 수 있습니다.');
+        }
+
+        if (message.isDeleted) {
+            throw new ForbiddenException('이미 삭제된 메시지입니다.');
+        }
+
+        const deletedMessage = await this.prisma.message.update({
+            where: { id: messageId },
+            data: { isDeleted: true },
+        });
+        
+        return deletedMessage;
+    }
+
     
 }
