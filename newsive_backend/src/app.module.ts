@@ -4,7 +4,8 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { NotificationModule } from './modules/notifications/notifications.module';
 import { FriendsModule } from './modules/friends/friends.module';
-import { ChatMoudle } from './modules/chat/chat.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { SocketModule } from './modules/socket/socket.module';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { ChatMoudle } from './modules/chat/chat.module';
     AuthModule,
     NotificationModule,
     FriendsModule,
-    ChatMoudle,
+    ChatModule,
+    SocketModule,
   ],
 })
 export class AppModule {}
