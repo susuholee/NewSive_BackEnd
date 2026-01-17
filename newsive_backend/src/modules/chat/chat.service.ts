@@ -127,31 +127,48 @@ export class ChatService {
     }
 
 
-    async getMessages(roomId: string,userId: number,take: number = 30) {
-    const isMember = await this.prisma.chatRoomMember.findUnique({
-      where: {
-        roomId_userId: {
-          roomId,
-          userId,
-        },
+    async getMessages(roomId: string, userId: number, take = 30) {
+    const room = await this.prisma.chatRoom.findUnique({
+        where: { id: roomId },
+    });
+
+
+    if (!room) {
+    throw new NotFoundException('채팅방이 존재하지 않습니다.');
+    }
+
+
+  const isMember = await this.prisma.chatRoomMember.findUnique({
+    where: {
+        roomId_userId: { roomId, userId },
+    },
+  });
+  
+  if (!isMember) {
+    throw new ForbiddenException('채팅방 멤버가 아닙니다.');
+  }
+
+  const messages = await this.prisma.message.findMany({
+    where: { roomId },
+    orderBy: { createdAt: 'desc' },
+    take,
+    include: {
+      sender: {
+        select: { nickname: true },
       },
-    });
+    },
+  });
 
-    if (!isMember) {
-      throw new ForbiddenException('채팅방 멤버가 아닙니다.');
-    }
-
-    const messages = await this.prisma.message.findMany({
-        where : {roomId},
-        orderBy : {createdAt: 'asc'},
-        take,
-    });
-    return messages.map((message) => ({
-        ...message,
-        content: message.isDeleted ? '삭제된 메시지입니다' : message.content, 
+  return messages.reverse().map((message) => ({
+    id: message.id,
+    content: message.isDeleted ? '삭제된 메시지입니다' : message.content,
+    isDeleted: message.isDeleted,
+    createdAt: message.createdAt,
+    senderId: message.senderId,
+    senderNickname: message.sender.nickname,
     }));
-
     }
+
 
     async deleteMessage(messageId: string, userId: number) {
         const message = await this.prisma.message.findUnique({
@@ -171,7 +188,7 @@ export class ChatService {
 
         const deletedMessage = await this.prisma.message.update({
             where: { id: messageId },
-            data: { isDeleted: true },
+            data: { isDeleted: true, content: null},
         });
         
         return deletedMessage;
