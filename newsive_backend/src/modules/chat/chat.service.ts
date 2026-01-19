@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { RoomType } from "@prisma/client";
 import { PrismaService } from "src/common/prisma/prisma.service";
 
@@ -169,6 +169,34 @@ export class ChatService {
     }));
     }
 
+    async updateMessage(messageId:string, userId: number, newContent: string) {
+      const message = await this.prisma.message.findUnique({
+        where : {id: messageId}
+      });
+
+ 
+      if(!message) {
+        throw new NotFoundException('메시지를 찾을 수 없습니다');
+      }
+
+      if(message.isDeleted) {
+        throw new BadRequestException('삭제된 메시지는 수정할 수 없습니다');
+      }
+      
+      if(message.senderId !== userId) {
+        throw new ForbiddenException('본인 메시지만 수정할 수 있습니다');
+      }
+
+      const updatedMessage = await this.prisma.message.update({
+        where : {id: messageId},
+        data: {
+          content : newContent,
+          editedAt : new Date(),
+        }
+      });
+
+      return updatedMessage;
+    }
 
     async deleteMessage(messageId: string, userId: number) {
         const message = await this.prisma.message.findUnique({

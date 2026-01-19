@@ -5,6 +5,7 @@ import { WsJwtAuthService } from "../socket/ws_jwt.service";
 import { JoinRoomDto } from "./dto/join_room.dto";
 import { CreateMessageDto } from "./dto/create_message.dto";
 import { DeleteMessageDto } from "./dto/delete_message.dto";
+import { UpdateMessageDto } from "./dto/update_message.dto";
 
 @WebSocketGateway({
     namespace : '/chat',
@@ -109,6 +110,28 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.server.to(dto.roomId).emit('chat:message', message);
 
         console.log(`[채팅][전송요청] user=${user.userId}, room=${dto.roomId}, content=${dto.content}`);
+    }
+
+    @SubscribeMessage('chat:update')
+    async handleUpdate(@MessageBody() dto:UpdateMessageDto, @ConnectedSocket() client: Socket) {
+        const user = client.data.user;
+
+         if(!user?.userId){
+            client.emit('chat:error', {message: '로그인이 필요합니다'});
+            return;
+        }
+
+        let updatedMessage;
+        try {
+            updatedMessage = await this.chatService.updateMessage(dto.messageId, user.userId, dto.newContent);
+        } catch (error) {
+            client.emit('chat:error', {message: error.message});
+            return;
+        }
+
+        this.server.to(updatedMessage.roomId).emit('chat:updated', {messageId: updatedMessage.id, newContent: updatedMessage.content, editedAt: updatedMessage.editedAt});
+
+        console.log(`[채팅][수정] user=${user.userId}, message=${updatedMessage.id}, content=${updatedMessage.content}`);
     }
 
     @SubscribeMessage('chat:delete')
