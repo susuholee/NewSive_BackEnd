@@ -9,6 +9,7 @@ import { SocketModule } from './modules/socket/socket.module';
 import { ConfigModule } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { NewsModule } from './modules/news/news.module';
+import { WeatherModule } from './modules/weather/weather.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { NewsModule } from './modules/news/news.module';
     FriendsModule,
     ChatModule,
     SocketModule,
-    NewsModule
+    NewsModule,
+    WeatherModule,
   ],
 })
 export class AppModule {}
