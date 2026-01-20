@@ -84,11 +84,26 @@ model Notification {
   message   String
   link      String?
 
+  newsId    String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+  news NewsNotificaiton? @relation(fields: [newsId], references: [id])
+
+  @@index([newsId])
 }
+
+model NewsNotificaiton {
+  id           String   @id
+  title        String
+  originalLink String
+  publishedAt  DateTime
+  sourceName   String
+
+  notifications Notification[]
+}
+
 
 
 
