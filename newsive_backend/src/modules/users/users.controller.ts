@@ -11,6 +11,12 @@ import { User } from '../auth/decorators/user.decorator';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+
+  @Get('availability')
+  async checkUsername(@Query('username') username: string) {
+    return this.usersService.checkUsername(username);
+  }
+  
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMyInfo(@User('userId') userId: number) {

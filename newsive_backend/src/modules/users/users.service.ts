@@ -1,8 +1,8 @@
-import { BadRequestException,ConflictException,Injectable, NotFoundException, UnauthorizedException} from '@nestjs/common';
+import {ConflictException,Injectable, NotFoundException, UnauthorizedException} from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { CreateUserDto } from './dto/create_users_dto';
 import { UpdateNotificationSettingDto } from './dto/update_notification_setting.dto';
+
 
 @Injectable()
 export class UsersService {
@@ -73,77 +73,6 @@ export class UsersService {
   };
   }
 
-
-  async createUser(dto: CreateUserDto) {
-  const {
-    username,
-    password,
-    passwordConfirm,
-    nickname,
-    birthday,
-    gender,
-  } = dto;
-
-  if (password !== passwordConfirm) {
-    throw new BadRequestException('비밀번호가 일치하지 않습니다');
-  }
-
-
-  const existUsername = await this.prisma.user.findUnique({
-    where: { username },
-  });
-
-  if (existUsername) {
-    throw new ConflictException('이미 존재하는 아이디입니다');
-  }
-
-  const existNickname = await this.prisma.user.findUnique({
-    where: { nickname },
-  });
-
-  if (existNickname) {
-    throw new ConflictException('이미 사용 중인 닉네임입니다');
-  }
-
-
-  const hashedPwd = await bcrypt.hash(password, 10);
-
-  const userData: any = {
-    username,
-    password: hashedPwd,
-    nickname,
-  };
-
-  if (birthday) {
-    userData.birthday = new Date(birthday);
-  }
-
-  if (gender) {
-    userData.gender = gender;
-  }
-
-
-  const user = await this.prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: userData,
-    });
-
-    await tx.userSetting.create({
-      data: {
-        userId: user.id,
-      },
-    });
-
-    return user;
-  });
-
-  return {
-    id: user.id,
-    username: user.username,
-    nickname: user.nickname,
-    createdAt: user.createdAt,
-  };
-  }
 
   async changeNickname(userId: number, nickname : string) {
     const user = await this.prisma.user.findUnique({

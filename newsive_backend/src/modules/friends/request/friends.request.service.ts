@@ -74,7 +74,7 @@ export class FriendRequestsService {
         throw new BadRequestException('닉네임을 입력해주세요.');
       }
 
-      const targetUser = await this.prisma.user.findUnique({
+      const targetUser = await this.prisma.user.findFirst({
         where: { nickname },
         select: { id: true },
       });
