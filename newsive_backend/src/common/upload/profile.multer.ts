@@ -18,7 +18,7 @@ export const profileImageMulterOptions = {
 
   fileFilter: (req, file, callback) => {
   if (!file.mimetype.startsWith('image/')) {
-    return callback(null, false);
+    return callback(new BadRequestException('이미지 파일만 업로드 가능합니다.'),false,);
   }
 
   callback(null, true);

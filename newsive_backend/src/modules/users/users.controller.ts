@@ -1,11 +1,14 @@
-import { Controller, Get, Post, Body, UseGuards, Req, Query, Put, Delete} from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Query, Put, Delete, Patch, UseInterceptors, UploadedFile} from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create_users_dto';
 import { JwtAuthGuard } from '../auth/guard/jwt_auth_guard';
 import { ChangeNicknameDto } from './dto/change_nickname_dto';
 import { ChangePasswordDto } from './dto/change_password_dto';
 import { UpdateNotificationSettingDto } from './dto/update_notification_setting.dto';
 import { User } from '../auth/decorators/user.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { profileImageMulterOptions } from 'src/common/upload/profile.multer';
+import { Multer } from "multer";
+
 
 @Controller('users')
 export class UsersController {
@@ -53,4 +56,16 @@ export class UsersController {
   async updateMyNotificationSetting(@User('userId') userId: number,@Body() dto: UpdateNotificationSettingDto) {
     return  await this.usersService.updateNotificationSetting(userId, dto);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/profile/image')
+  @UseInterceptors(FileInterceptor('file', profileImageMulterOptions))
+  async updateProfileImage(@User('userId') userId: number,@UploadedFile() file: Multer.File) {
+   const imagePath = file ? `uploads/profile/${file.filename}` : null;
+
+  return  await this.usersService.updateProfileImage(userId, imagePath);
 }
+
+
+}
+

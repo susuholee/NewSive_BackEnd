@@ -1,4 +1,4 @@
-import {ConflictException,Injectable, NotFoundException, UnauthorizedException} from '@nestjs/common';
+import {BadRequestException, ConflictException,Injectable, NotFoundException, UnauthorizedException} from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateNotificationSettingDto } from './dto/update_notification_setting.dto';
@@ -7,29 +7,6 @@ import { DEFAULT_PROFILE_IMAGE_URL } from 'src/common/constants/profile.constant
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
-
-  async findAll() {
-    return this.prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        nickname: true,
-        createdAt: true,
-      },
-    });
-  }
-
-  async findById(id: number) {
-    return this.prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        username: true,
-        nickname: true,
-        createdAt: true,
-      },
-    });
-  }
 
   async findByUsername(username: string) {
     return this.prisma.user.findUnique({
@@ -49,12 +26,12 @@ export class UsersService {
   return { available: true };
   }
 
-  async findMyInfo(userId: number) {
+async findMyInfo(userId: number) {
   const user = await this.prisma.user.findUnique({
     where: { id: userId },
-    include : {
-      setting : true,
-    }
+    include: {
+      setting: true,
+    },
   });
 
   if (!user) {
@@ -63,16 +40,19 @@ export class UsersService {
 
   const setting = await this.ensureUserSetting(userId);
 
+  const BASE_URL = process.env.SERVER_URL!; 
+  const DEFAULT_PATH = process.env.DEFAULT_PROFILE_IMAGE_URL!; 
+
   return {
     id: user.id,
     username: user.username,
     nickname: user.nickname,
     birthday: user.birthday,
     gender: user.gender,
-    profileImgUrl: user.profileImgUrl ?? DEFAULT_PROFILE_IMAGE_URL,
+    profileImgUrl: user.profileImgUrl ? `${BASE_URL}/${user.profileImgUrl}`: `${BASE_URL}/${DEFAULT_PATH}`,
     allowNotification: setting.allowNotification,
   };
-  }
+}
 
 
   async changeNickname(userId: number, nickname : string) {
@@ -223,6 +203,36 @@ export class UsersService {
     },
   });
   }
+
+
+  async updateProfileImage(userId: number, profileImgPath: string | null) {
+  if (!profileImgPath) {
+    throw new BadRequestException('업로드할 프로필 이미지를 선택해주세요.');
+  }
+
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, profileImgUrl: true },
+  });
+
+  if (!user) {
+    throw new NotFoundException('유저를 찾을 수 없습니다.');
+  }
+
+  const updatedUser = await this.prisma.user.update({
+    where: { id: userId },
+    data: { profileImgUrl: profileImgPath },
+  });
+
+  const BASE_URL = process.env.SERVER_URL!;
+  const DEFAULT_PATH = process.env.DEFAULT_PROFILE_IMAGE_URL!; 
+
+  return {
+    message: '프로필 이미지가 변경되었습니다.',
+    profileImgUrl: updatedUser.profileImgUrl ? `${BASE_URL}/${updatedUser.profileImgUrl}`: `${BASE_URL}/${DEFAULT_PATH}`,
+  };
+  }
+
 
 
 }
