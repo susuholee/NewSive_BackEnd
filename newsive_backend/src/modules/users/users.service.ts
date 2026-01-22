@@ -2,7 +2,7 @@ import {ConflictException,Injectable, NotFoundException, UnauthorizedException} 
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateNotificationSettingDto } from './dto/update_notification_setting.dto';
-
+import { DEFAULT_PROFILE_IMAGE_URL } from 'src/common/constants/profile.constants';
 
 @Injectable()
 export class UsersService {
@@ -52,11 +52,9 @@ export class UsersService {
   async findMyInfo(userId: number) {
   const user = await this.prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      id: true,
-      username: true,
-      nickname: true,
-    },
+    include : {
+      setting : true,
+    }
   });
 
   if (!user) {
@@ -69,6 +67,9 @@ export class UsersService {
     id: user.id,
     username: user.username,
     nickname: user.nickname,
+    birthday: user.birthday,
+    gender: user.gender,
+    profileImgUrl: user.profileImgUrl ?? DEFAULT_PROFILE_IMAGE_URL,
     allowNotification: setting.allowNotification,
   };
   }

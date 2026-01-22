@@ -6,6 +6,7 @@ import { CreateUserDto } from '../users/dto/create_users_dto';
 import { Multer} from "multer";
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { mapUser } from 'src/common/utils/user.mapper';
+import { DEFAULT_PROFILE_IMAGE_URL } from 'src/common/constants/profile.constants';
 
 @Injectable()
 export class AuthService {
@@ -149,6 +150,7 @@ export class AuthService {
           id: user.id,
           username: user.username,
           nickname: user.nickname,
+          profileImgUrl: user.profileImgUrl ?? DEFAULT_PROFILE_IMAGE_URL,
         },
       };
   }
