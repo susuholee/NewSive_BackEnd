@@ -23,6 +23,7 @@ export class FriendsService {
             id: true,
             username: true,
             nickname: true,
+            profileImgUrl: true
           },
         },
       },

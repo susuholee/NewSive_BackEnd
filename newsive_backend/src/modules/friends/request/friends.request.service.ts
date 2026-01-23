@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException} from "@nestjs/common";
 import { NotificationType } from "@prisma/client";
 import { PrismaService } from "src/common/prisma/prisma.service";
+import { mapUser } from "src/common/utils/user.mapper";
 import { NotificationService } from "src/modules/notifications/notifications.service";
 
 
@@ -86,44 +87,79 @@ export class FriendRequestsService {
       return this.createFriendRequest(userId, targetUser.id);
     }
 
-    // 받은 요청 조회
     async getReceivedRequests(userId: number) {
-    return this.prisma.friendRequest.findMany({
-      where: {
-        friendUserId: userId,
-        status: 'PENDING',
-      },
-      include: {
-        user: {
-          select :{
-            id : true,
-            username : true,
-            nickname : true,
-            createdAt : true,
-          }
+  const requests = await this.prisma.friendRequest.findMany({
+    where: {
+      friendUserId: userId,
+      status: 'PENDING',
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      user: {   
+        select: {
+          id: true,
+          username: true,
+          nickname: true,
+          profileImgUrl: true,  
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return requests.map((r) => {
+    const mappedUser = mapUser(r.user);
+
+    return {
+      id: r.id,
+      createdAt: r.createdAt,
+      user: mappedUser,   
+    };
+  });
     }
+
 
     // 보낸 요청 조회
     async getSentRequests(userId: number) {
-    return this.prisma.friendRequest.findMany({
+      const requests = await this.prisma.friendRequest.findMany({
         where: {
-        userId,
-        status: 'PENDING',
+          userId,
+          status: 'PENDING',
+          NOT: {
+            friendUserId: userId, 
+          },
         },
-        include: {
-        friendUser: true, 
+        select: {
+          id: true,
+          createdAt: true,
+          friendUser: {
+            select: {
+              id: true,
+              nickname: true,
+              username: true,
+              profileImgUrl: true,
+            },
+          },
         },
         orderBy: {
-        createdAt: 'desc',
+          createdAt: 'desc',
         },
-    });
+      });
+
+      return requests.map((r) => {
+        const mappedFriend = mapUser(r.friendUser);
+
+        return {
+          id: r.id,
+          createdAt: r.createdAt,
+          friendUser: mappedFriend, 
+        };
+      });
     }
+
 
     // 수락한 요청
     async acceptFriendRequest(requestId: number, userId: number) {
@@ -279,14 +315,45 @@ export class FriendRequestsService {
       }
     }
 
+    const mappedUser = mapUser({
+    id: u.id,
+    nickname: u.nickname,
+    username: u.username,
+    profileImgUrl: u.profileImgUrl,
+  });
+
     return {
-      id: u.id,
-      nickname: u.nickname,
-      username: u.username,
-      profileImgUrl: u.profileImgUrl,
+      ...mappedUser,
       relation,
     };
   });
     }
+
+    // 요청 취소
+    async cancelFriendRequest(requestId: number, userId: number) {
+      const request = await this.prisma.friendRequest.findUnique({
+        where: { id: requestId },
+      });
+
+      if (!request) {
+        throw new NotFoundException('친구 요청이 존재하지 않습니다');
+      }
+
+
+      if (request.userId !== userId) {
+        throw new BadRequestException('요청을 취소할 권한이 없습니다');
+      }
+
+      
+      if (request.status !== 'PENDING') {
+        throw new BadRequestException('이미 처리된 요청은 취소할 수 없습니다');
+      }
+      await this.prisma.friendRequest.delete({
+        where: { id: requestId },
+      });
+
+      return { message: '친구 요청을 취소했습니다.' };
+    }
+
 
 }

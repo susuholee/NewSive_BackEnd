@@ -3,6 +3,7 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateNotificationSettingDto } from './dto/update_notification_setting.dto';
 import { DEFAULT_PROFILE_IMAGE_URL } from 'src/common/constants/profile.constants';
+import { mapUser } from 'src/common/utils/user.mapper';
 
 @Injectable()
 export class UsersService {
@@ -212,7 +213,7 @@ export class UsersService {
 
   const user = await this.prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, profileImgUrl: true },
+    select: { id: true, profileImgUrl: true, username: true, nickname: true },
   });
 
   if (!user) {
@@ -222,17 +223,19 @@ export class UsersService {
   const updatedUser = await this.prisma.user.update({
     where: { id: userId },
     data: { profileImgUrl: profileImgPath },
+    select: {
+      id: true,
+      username: true,
+      nickname: true,
+      profileImgUrl: true,
+    },
   });
-
-  const BASE_URL = process.env.SERVER_URL!;
-  const DEFAULT_PATH = process.env.DEFAULT_PROFILE_IMAGE_URL!; 
 
   return {
     message: '프로필 이미지가 변경되었습니다.',
-    profileImgUrl: updatedUser.profileImgUrl ? `${BASE_URL}/${updatedUser.profileImgUrl}`: `${BASE_URL}/${DEFAULT_PATH}`,
+    user: mapUser(updatedUser),   
   };
   }
-
 
 
 }

@@ -1,4 +1,4 @@
-import { Controller,Patch,Post,Body,Param,Req,UseGuards, Get, Query} from '@nestjs/common';
+import { Controller,Patch,Post,Body,Param,Req,UseGuards, Get, Query, Delete} from '@nestjs/common';
 import { FriendRequestsService } from './friends.request.service';
 import { User } from 'src/modules/auth/decorators/user.decorator';
 import { JwtAuthGuard } from '../../auth/guard/jwt_auth_guard';
@@ -40,6 +40,12 @@ export class FriendRequestsController {
 
   @Get('search')
   async searchUsers(@User('userId') userId: number,@Query('nickname') nickname: string) {
-  return await this.friendRequestsService.searchUsersWithRelation(userId, nickname);
-}
+    return await this.friendRequestsService.searchUsersWithRelation(userId, nickname);
+  }
+
+  @Delete(':id/cancel')
+  async cancelFriendRequest(@Param('id') id: string,@User('userId') userId: number) {
+    return await this.friendRequestsService.cancelFriendRequest(Number(id), userId);
+  }
+
 }
