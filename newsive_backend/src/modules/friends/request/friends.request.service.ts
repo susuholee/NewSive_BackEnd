@@ -206,4 +206,87 @@ export class FriendRequestsService {
       data: { status: 'REJECTED' },
     });
     }
+
+    async searchUsersWithRelation(userId: number, nickname: string) {
+  if (!nickname?.trim()) return [];
+
+  const users = await this.prisma.user.findMany({
+    where: {
+      nickname: {
+        contains: nickname,
+        mode: 'insensitive',
+      },
+      NOT: { id: userId },
+    },
+    select: {
+      id: true,
+      nickname: true,
+      username: true,
+      profileImgUrl: true,
+    },
+    take: 20,
+  });
+
+  if (users.length === 0) return [];
+
+  const userIds = users.map((u) => u.id);
+
+  const friends = await this.prisma.friend.findMany({
+    where: {
+      OR: [
+        { userId, friendUserId: { in: userIds } },
+        { userId: { in: userIds }, friendUserId: userId },
+      ],
+    },
+    select: {
+      userId: true,
+      friendUserId: true,
+    },
+  });
+
+
+  const requests = await this.prisma.friendRequest.findMany({
+    where: {
+      OR: [
+        { userId, friendUserId: { in: userIds } },        
+        { userId: { in: userIds }, friendUserId: userId }, 
+      ],
+    },
+    select: {
+      userId: true,
+      friendUserId: true,
+      status: true,
+    },
+  });
+
+  return users.map((u) => {
+    let relation: 'FRIEND' | 'SENT' | 'RECEIVED' | 'NONE' = 'NONE';
+
+
+    const isFriend = friends.some((f) =>(f.userId === userId && f.friendUserId === u.id) || (f.userId === u.id && f.friendUserId === userId));
+
+    if (isFriend) {
+      relation = 'FRIEND';
+    } else {
+      const req = requests.find((r) => (r.userId === userId && r.friendUserId === u.id) || (r.userId === u.id && r.friendUserId === userId));
+
+      if (req && req.status === 'PENDING') {
+        if (req.userId === userId) {
+          relation = 'SENT';      
+        } else {
+          relation = 'RECEIVED';   
+        }
+      }
+    }
+
+    return {
+      id: u.id,
+      nickname: u.nickname,
+      username: u.username,
+      profileImgUrl: u.profileImgUrl,
+      relation,
+    };
+  });
+    }
+
 }

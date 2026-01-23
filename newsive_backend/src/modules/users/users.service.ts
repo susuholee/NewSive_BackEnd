@@ -26,33 +26,33 @@ export class UsersService {
   return { available: true };
   }
 
-async findMyInfo(userId: number) {
-  const user = await this.prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      setting: true,
-    },
-  });
+  async findMyInfo(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        setting: true,
+      },
+    });
 
-  if (!user) {
-    throw new NotFoundException('유저를 찾을 수 없습니다.');
+    if (!user) {
+      throw new NotFoundException('유저를 찾을 수 없습니다.');
+    }
+
+    const setting = await this.ensureUserSetting(userId);
+
+    const BASE_URL = process.env.SERVER_URL!; 
+    const DEFAULT_PATH = process.env.DEFAULT_PROFILE_IMAGE_URL!; 
+
+    return {
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      birthday: user.birthday,
+      gender: user.gender,
+      profileImgUrl: user.profileImgUrl ? `${BASE_URL}/${user.profileImgUrl}`: `${BASE_URL}/${DEFAULT_PATH}`,
+      allowNotification: setting.allowNotification,
+    };
   }
-
-  const setting = await this.ensureUserSetting(userId);
-
-  const BASE_URL = process.env.SERVER_URL!; 
-  const DEFAULT_PATH = process.env.DEFAULT_PROFILE_IMAGE_URL!; 
-
-  return {
-    id: user.id,
-    username: user.username,
-    nickname: user.nickname,
-    birthday: user.birthday,
-    gender: user.gender,
-    profileImgUrl: user.profileImgUrl ? `${BASE_URL}/${user.profileImgUrl}`: `${BASE_URL}/${DEFAULT_PATH}`,
-    allowNotification: setting.allowNotification,
-  };
-}
 
 
   async changeNickname(userId: number, nickname : string) {
