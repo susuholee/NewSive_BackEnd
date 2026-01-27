@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException} from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException, ConflictException} from "@nestjs/common";
 import { NotificationType } from "@prisma/client";
 import { PrismaService } from "src/common/prisma/prisma.service";
 import { mapUser } from "src/common/utils/user.mapper";
@@ -17,43 +17,49 @@ export class FriendRequestsService {
       throw new BadRequestException('자기 자신에게는 친구요청을 보낼 수 없습니다');
     }
 
-    // 이미 친구인지 확인
-    const alreadyFriend = await this.prisma.friend.findFirst({
-      where: {
-        OR: [
-          { userId, friendUserId },
-          { userId: friendUserId, friendUserId: userId },
-        ],
-      },
-    });
+  // 상대 유저 존재 여부 (이거도 있으면 더 좋음)
+  const targetUser = await this.prisma.user.findUnique({
+    where: { id: friendUserId },
+  });
 
-    if (alreadyFriend) {
-      throw new BadRequestException('이미 친구입니다');
+  if (!targetUser) {
+    throw new NotFoundException('존재하지 않는 유저입니다');
+  }
+
+  // 이미 친구인지
+  const alreadyFriend = await this.prisma.friend.findFirst({
+    where: {
+      OR: [
+        { userId, friendUserId },
+        { userId: friendUserId, friendUserId: userId },
+      ],
+    },
+  });
+
+  if (alreadyFriend) {
+    throw new ConflictException('이미 친구입니다');
+  }
+
+  const alreadyRequest = await this.prisma.friendRequest.findFirst({
+    where: {
+      OR: [
+        { userId, friendUserId },
+        { userId: friendUserId, friendUserId: userId },
+      ],
+      status: 'PENDING',
+    },
+  });
+
+  if (alreadyRequest) {
+    if (alreadyRequest.userId === userId) {
+      throw new ConflictException('이미 친구 요청을 보냈습니다');
+    } else {
+      throw new ConflictException('상대방이 이미 친구 요청을 보냈습니다');
     }
+  }
 
-    // 기존 요청 존재 여부 확인
-    const alreadyRequest = await this.prisma.friendRequest.findFirst({
-      where: {
-        OR: [
-          { userId, friendUserId },
-          { userId: friendUserId, friendUserId: userId },
-        ],
-      },
-    });
-
-    if (alreadyRequest) {
-      switch (alreadyRequest.status) {
-        case 'PENDING':
-          throw new BadRequestException('이미 친구 요청이 존재합니다');
-        case 'REJECTED':
-          throw new BadRequestException('이미 거절된 요청입니다');
-        case 'ACCEPTED':
-          throw new BadRequestException('이미 친구입니다');
-      }
-    }
-
-    // 요청 생성
-   const request = await this.prisma.friendRequest.create({
+  const result = await this.prisma.$transaction(async (tx) => {
+    const request = await tx.friendRequest.create({
       data: {
         userId,
         friendUserId,
@@ -61,31 +67,20 @@ export class FriendRequestsService {
     });
 
     await this.notificationService.createNotification({
-      userId : friendUserId,
-      type : NotificationType.FRIEND_REQUEST,
-      message : "새로운 친구 요청이 들어왔습니다!",
-      link : '/',
-    })
+      userId: friendUserId,
+      type: NotificationType.FRIEND_REQUEST,
+      message: "새로운 친구 요청이 들어왔습니다!",
+      link: '/',
+    });
 
     return request;
+  });
+
+  return result;
     }
 
-    async createFriendRequestByNickname(userId: number, nickname: string) {
-      if (!nickname?.trim()) {
-        throw new BadRequestException('닉네임을 입력해주세요.');
-      }
 
-      const targetUser = await this.prisma.user.findFirst({
-        where: { nickname },
-        select: { id: true },
-      });
 
-      if (!targetUser) {
-        throw new NotFoundException('존재하지 않는 유저입니다.');
-      }
-
-      return this.createFriendRequest(userId, targetUser.id);
-    }
 
     async getReceivedRequests(userId: number) {
   const requests = await this.prisma.friendRequest.findMany({

@@ -9,7 +9,7 @@ export class ChatController {
 
 @Get('rooms/:roomId/messages')
     async getMessages(@Param('roomId') roomId: string,@Query('take') take: string,@Req() req) {
-        return await this.chatService.getMessages(roomId, req.user.userId,take ? Number(take) : 30);
+        return await this.chatService.getMessages(roomId, req.user.id,take ? Number(take) : 30);
     }
 
 

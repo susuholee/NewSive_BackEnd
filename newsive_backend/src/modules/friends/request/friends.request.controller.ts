@@ -9,42 +9,38 @@ export class FriendRequestsController {
   constructor(private readonly friendRequestsService: FriendRequestsService) {}
 
   @Post()
-  async create( @Body('receiverId') receiverId: number,@User('userId') userId: number) {
-    return await this.friendRequestsService.createFriendRequest(userId, receiverId);
+  async createFriendRequest( @Body('friendUserId') friendUserId: number,@User('id') userId: number) {
+    return await this.friendRequestsService.createFriendRequest(userId, friendUserId);
   }
 
-  @Post('nickname')
-  async createByNickname( @Body('nickname') nickname: string,@User('userId') userId: number) {
-    return await this.friendRequestsService.createFriendRequestByNickname(userId, nickname);
-  }
 
   @Get('received')
-  async getReceived(@User('userId') userId: number) {
+  async getReceived(@User('id') userId: number) {
     return await this.friendRequestsService.getReceivedRequests(userId);
   }
 
   @Get('sent')
-  async getSent(@User('userId') userId: number) {
+  async getSent(@User('id') userId: number) {
     return await this.friendRequestsService.getSentRequests(userId);
   }
 
   @Patch(':id/accept')
-  async acceptFriendRequest(@Param('id') id: string,@User('userId') userId: number) {
+  async acceptFriendRequest(@Param('id') id: string,@User('id') userId: number) {
     return await this.friendRequestsService.acceptFriendRequest(Number(id), userId);
   }
 
   @Patch(':id/reject')
-  async rejectFriendRequest(@Param('id') id: string,@User('userId') userId: number) {
+  async rejectFriendRequest(@Param('id') id: string,@User('id') userId: number) {
     return await this.friendRequestsService.rejectFriendRequest(Number(id), userId);
   }
 
   @Get('search')
-  async searchUsers(@User('userId') userId: number,@Query('nickname') nickname: string) {
+  async searchUsers(@User('id') userId: number,@Query('nickname') nickname: string) {
     return await this.friendRequestsService.searchUsersWithRelation(userId, nickname);
   }
 
   @Delete(':id/cancel')
-  async cancelFriendRequest(@Param('id') id: string,@User('userId') userId: number) {
+  async cancelFriendRequest(@Param('id') id: string,@User('id') userId: number) {
     return await this.friendRequestsService.cancelFriendRequest(Number(id), userId);
   }
 

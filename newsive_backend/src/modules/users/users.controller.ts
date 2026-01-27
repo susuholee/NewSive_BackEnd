@@ -22,45 +22,45 @@ export class UsersController {
   
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getMyInfo(@User('userId') userId: number) {
+  async getMyInfo(@User('id') userId: number) {
     return  await this.usersService.findMyInfo(userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('me/nickname')
-  async changeNickname(@User('userId') userId: number,@Body() dto: ChangeNicknameDto,
+  async changeNickname(@User('id') userId: number,@Body() dto: ChangeNicknameDto,
   ) {
     return await this.usersService.changeNickname(userId, dto.nickname);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('me/password')
-  async changePassword(@User('userId') userId: number,@Body() dto: ChangePasswordDto) {
+  async changePassword(@User('id') userId: number,@Body() dto: ChangePasswordDto) {
     return  await this.usersService.changePassword(userId,dto.currentPassword,dto.newPassword);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('me')
-  async deleteUser(@User('userId') userId: number) {
+  async deleteUser(@User('id') userId: number) {
     return await this.usersService.deleteUser(userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('me/settings/notification')
-  async getMyNotificationSetting(@User('userId') userId: number) {
+  async getMyNotificationSetting(@User('id') userId: number) {
     return await this.usersService.getNotificationSetting(userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('me/settings/notification')
-  async updateMyNotificationSetting(@User('userId') userId: number,@Body() dto: UpdateNotificationSettingDto) {
+  async updateMyNotificationSetting(@User('id') userId: number,@Body() dto: UpdateNotificationSettingDto) {
     return  await this.usersService.updateNotificationSetting(userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch('me/profile/image')
   @UseInterceptors(FileInterceptor('file', profileImageMulterOptions))
-  async updateProfileImage(@User('userId') userId: number,@UploadedFile() file: Multer.File) {
+  async updateProfileImage(@User('id') userId: number,@UploadedFile() file: Multer.File) {
    const imagePath = file ? `uploads/profile/${file.filename}` : null;
 
   return  await this.usersService.updateProfileImage(userId, imagePath);
