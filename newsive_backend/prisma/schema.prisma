@@ -13,15 +13,11 @@ enum FriendRequestStatus {
   REJECTED
 }
 
-
 enum NotificationType {
   FRIEND_REQUEST
   FRIEND_ACCEPTED
-  NEWS_BREAKING
-  NEWS_KEYWORD
   SYSTEM
 }
-
 
 enum Gender {
   male
@@ -49,7 +45,6 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-
   setting        UserSetting?
   notifications  Notification[]
 
@@ -63,52 +58,41 @@ model User {
   messages  Message[]
 }
 
-
 model UserSetting {
   id Int @id @default(autoincrement())
   userId Int @unique
 
   allowNotification Boolean @default(true)
-  allowBreakingNews Boolean @default(true)
-  allowKeywordAlert Boolean @default(true)
-
-  defaultRegion String?
 
   user User @relation(fields: [userId], references: [id])
 }
 
-
 model Notification {
-  id        Int      @id @default(autoincrement())
+  id        Int @id @default(autoincrement())
   userId    Int
-
   type      NotificationType
   message   String
   link      String?
-
-  newsId    String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
-  news NewsNotification? @relation(fields: [newsId], references: [id])
-
-  @@index([newsId])
-}
-
-model NewsNotification {
-  id           String   @id
-  title        String
-  originalLink String
-  publishedAt  DateTime
-  sourceName   String
-
-  notifications Notification[]
 }
 
 
 
+model News {
+  id            Int      @id @default(autoincrement())
+  title         String
+  summary       String?
+  thumbnailUrl  String?
+  originalLink  String   @unique
+  sourceName    String
+  publishedAt   DateTime  
+  createdAt     DateTime @default(now())
 
+  @@index([publishedAt])
+}
 
 model Friend {
   id           Int      @id @default(autoincrement())
@@ -121,7 +105,6 @@ model Friend {
 
   @@unique([userId, friendUserId])
 }
-
 
 model FriendRequest {
   id Int @id @default(autoincrement())

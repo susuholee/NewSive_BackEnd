@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, Patch, Req, UseGuards} from "@nestjs/common";
+import { Controller, Delete, Get, Param, ParseIntPipe, Patch, Req, UseGuards} from "@nestjs/common";
 import { NotificationService } from "./notifications.service";
 import { JwtAuthGuard } from '../auth/guard/jwt_auth_guard';
 
@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '../auth/guard/jwt_auth_guard';
 export class NotificationController {
     constructor(private readonly notificationService : NotificationService) {}
 
-    @Get()
+  @Get()
   async getNotifications(@Req() req) {
     return await this.notificationService.getNotificationByUser(req.user.id);
   }
@@ -25,6 +25,11 @@ export class NotificationController {
 
   @Patch(':id/read')
   async readOne(@Param('id', ParseIntPipe) id: number,@Req() req) {
-    return this.notificationService.notificationRead(id, req.user.id);
+    return  await this.notificationService.notificationRead(id, req.user.id);
+  }
+
+   @Delete('read')
+    async deleteReadNotifications(@Req() req) {
+    return await this.notificationService.deleteReadNotifications(req.user.id);
   }
 }

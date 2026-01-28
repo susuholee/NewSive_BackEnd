@@ -5,9 +5,10 @@ import { NewsService } from './news.service';
 export class NewsController {
   constructor(private readonly newsService: NewsService) {}
 
+
   @Get()
-  async getTopNews(@Query('refresh') refresh?: string) {
-    const forceRefresh = refresh === 'true';
-    return  await this.newsService.getTopNews(forceRefresh);
+  async getTopNews() {
+    return await this.newsService.getTopNews();
   }
+
 }

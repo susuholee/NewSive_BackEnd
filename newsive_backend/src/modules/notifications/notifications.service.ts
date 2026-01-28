@@ -56,4 +56,13 @@ export class NotificationService {
             where : { userId, isRead : false}
         })
     }
+
+    async deleteReadNotifications(userId: number) {
+    return this.prisma.notification.deleteMany({
+      where: {
+        userId,
+        isRead: true,
+      },
+    });
+    }
 }

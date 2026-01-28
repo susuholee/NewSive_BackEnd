@@ -10,6 +10,7 @@ import { ConfigModule } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { NewsModule } from './modules/news/news.module';
 import { WeatherModule } from './modules/weather/weather.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { WeatherModule } from './modules/weather/weather.module';
       ttl : 600,
     }),
 
-
+    ScheduleModule.forRoot(),
     PrismaModule,
     UsersModule,
     AuthModule,

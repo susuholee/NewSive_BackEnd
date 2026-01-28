@@ -168,9 +168,6 @@ export class UsersService {
 
     return {
       allowNotification : setting.allowNotification,
-      allowBreakingNews : setting.allowBreakingNews,
-      allowKeywordAlert : setting.allowKeywordAlert,
-      defaultRegion : setting.defaultRegion
     };
   }
 
