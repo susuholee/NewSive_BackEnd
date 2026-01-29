@@ -1,16 +1,16 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { RoomType } from "@prisma/client";
 import { PrismaService } from "src/common/prisma/prisma.service";
-
+import { MediaType } from '@prisma/client';
 
 @Injectable()
 export class ChatService {
     constructor(private readonly prisma: PrismaService) {}
 
     async getOrCreateDirectRoom(userId: number, peerUserId: number) {
-  const peerUser = await this.prisma.user.findUnique({
-    where: { id: peerUserId },
-  });
+    const peerUser = await this.prisma.user.findUnique({
+      where: { id: peerUserId },
+    });
 
   if (!peerUser) {
     throw new NotFoundException("존재하지 않은 유저입니다");
@@ -43,6 +43,7 @@ export class ChatService {
             select: {
               id: true,
               nickname: true,
+              profileImgUrl: true,
             },
           },
         },
@@ -79,51 +80,73 @@ export class ChatService {
     }
 
 
-    async createMessage(roomId: string, senderId: number, content: string) {
-  const room = await this.prisma.chatRoom.findUnique({
-    where: { id: roomId },
-  });
+  
+    async createMessage(roomId: string,senderId: number,content?: string,medias?: { type: MediaType; url: string }[]) {
+      const room = await this.prisma.chatRoom.findUnique({
+        where: { id: roomId },
+      });
 
-  if (!room) {
-    throw new NotFoundException("존재하지 않은 채팅방입니다");
-  }
+      if (!room) {
+        throw new NotFoundException('존재하지 않은 채팅방입니다');
+      }
 
-  const isMember = await this.prisma.chatRoomMember.findUnique({
-    where: {
-      roomId_userId: {
-        roomId,
-        userId: senderId,
-      },
-    },
-  });
 
-  if (!isMember) {
-    throw new ForbiddenException("채팅방 멤버만 메시지를 보낼 수 있습니다.");
-  }
-
-  const message = await this.prisma.message.create({
-    data: {
-      roomId,
-      senderId,
-      content,
-    },
-    include: {
-      sender: {
-        select: {
-          id: true,
-          nickname: true,
+      const isMember = await this.prisma.chatRoomMember.findUnique({
+        where: {
+          roomId_userId: {
+            roomId,
+            userId: senderId,
+          },
         },
-      },
-    },
-  });
+      });
 
-  return {
-    id: message.id,
-    senderId: message.senderId,
-    senderNickname: message.sender.nickname,
-    content: message.content,
-    createdAt: message.createdAt,
-  };
+      if (!isMember) {
+        throw new ForbiddenException('채팅방 멤버만 메시지를 보낼 수 있습니다.');
+      }
+
+      const hasContent = content && content.trim().length > 0;
+      const hasMedias = medias && medias.length > 0;
+
+      if (!hasContent && !hasMedias) {
+        throw new BadRequestException('메시지 또는 미디어가 필요합니다.');
+      }
+
+
+      const message = await this.prisma.message.create({
+        data: {
+          roomId,
+          senderId,
+          content: hasContent ? content!.trim() : null,
+          medias: hasMedias
+            ? {
+                create: medias!.map((m) => ({
+                  type: m.type,
+                  url: m.url,
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              nickname: true,
+            },
+          },
+          medias: true,
+        },
+      });
+
+      return {
+        id: message.id,
+        roomId: message.roomId,
+        senderId: message.senderId,
+        senderNickname: message.sender.nickname,
+        content: message.content,
+        medias: message.medias,
+        createdAt: message.createdAt,
+        editedAt: message.editedAt,
+      };
     }
 
 
@@ -156,6 +179,7 @@ export class ChatService {
       sender: {
         select: { nickname: true },
       },
+      medias: true,
     },
   });
 
@@ -164,6 +188,7 @@ export class ChatService {
     content: message.isDeleted ? '삭제된 메시지입니다' : message.content,
     isDeleted: message.isDeleted,
     createdAt: message.createdAt,
+    medias: message.medias ?? [],  
     senderId: message.senderId,
     senderNickname: message.sender.nickname,
     }));
@@ -220,6 +245,42 @@ export class ChatService {
         });
         
         return deletedMessage;
+    }
+
+    async deleteMessageMedia(mediaId: string,userId: number) {
+      const media = await this.prisma.messageMedia.findUnique({
+        where: { id: mediaId },
+        include: {
+          message: {
+            select: {
+              id: true,
+              roomId: true,
+              senderId: true,
+            },
+          },
+        },
+      });
+
+      if (!media) {
+        throw new NotFoundException('미디어를 찾을 수 없습니다.');
+      }
+
+      // 메시지 작성자만 가능
+      if (media.message.senderId !== userId) {
+        throw new ForbiddenException('본인 메시지의 미디어만 삭제할 수 있습니다.');
+      }
+
+  
+
+      await this.prisma.messageMedia.delete({
+        where: { id: mediaId },
+      });
+
+      return {
+        roomId: media.message.roomId,
+        messageId: media.messageId,
+        mediaId,
+      };
     }
 
     

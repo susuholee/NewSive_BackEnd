@@ -19,6 +19,11 @@ enum NotificationType {
   SYSTEM
 }
 
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
 enum Gender {
   male
   female
@@ -151,8 +156,22 @@ model Message {
   createdAt DateTime @default(now())
   editedAt DateTime?
 
+  medias MessageMedia[]  
+
   room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   sender   User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([roomId, createdAt])
+}
+
+model MessageMedia {
+  id        String   @id @default(cuid())
+  messageId String
+  type      MediaType
+  url       String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
 }

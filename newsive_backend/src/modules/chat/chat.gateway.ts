@@ -6,6 +6,8 @@ import { JoinRoomDto } from "./dto/join_room.dto";
 import { CreateMessageDto } from "./dto/create_message.dto";
 import { DeleteMessageDto } from "./dto/delete_message.dto";
 import { UpdateMessageDto } from "./dto/update_message.dto";
+import { mapUser } from "src/common/utils/user.mapper";
+import { DeleteMediaDto } from "../users/dto/delete_media.dto";
 
 @WebSocketGateway({
     namespace : '/chat',
@@ -77,39 +79,53 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return;
         }
 
-        client.emit('chat:joined', {roomId: room.id, peerUser: { id: peerMember.user.id, nickname: peerMember.user.nickname}});
+    const mappedUser = mapUser(peerMember.user);
+
+    client.emit('chat:joined', { roomId: room.id, peerUser: {id: mappedUser.id, nickname: mappedUser.nickname, profileImgUrl: mappedUser.profileImgUrl},
+});
     }
 
-    @SubscribeMessage('chat:send')
-    async handleSend(@MessageBody() dto: CreateMessageDto, @ConnectedSocket() client: Socket) {
-        const user = client.data.user;
+   @SubscribeMessage('chat:send')
+    async handleSend(
+    @MessageBody() dto: CreateMessageDto,
+    @ConnectedSocket() client: Socket,
+    ) {
+    const user = client.data.user;
 
-        if (!user?.userId){
-            client.emit('chat:error', {message : "로그인이 필요합니다"});
-            return;
-        }
+    if (!user?.userId) {
+        client.emit('chat:error', { message: '로그인이 필요합니다' });
+        return;
+    }
 
-        if (!dto.roomId) {
-            client.emit('chat:error', {message : "잘못된 채팅방입니다."});
-            return;
-        }
+    if (!dto.roomId) {
+        client.emit('chat:error', { message: '잘못된 채팅방입니다.' });
+        return;
+    }
 
-        if (!dto.content || dto.content.trim().length === 0){
-            client.emit('chat:error', { message: '메시지를 입력해주세요.' });
-            return;
-        }
+    const hasContent = dto.content && dto.content.trim().length > 0;
+    const hasMedias = dto.medias && dto.medias.length > 0;
 
-        let message;
-        try {
-            message = await this.chatService.createMessage(dto.roomId, user.userId, dto.content);
-        } catch (error) {
-            client.emit('chat:error', { message: error.message});
-            return;
-        }
-        
-        this.server.to(dto.roomId).emit('chat:message', message);
+    if (!hasContent && !hasMedias) {
+        client.emit('chat:error', {
+        message: '메시지 또는 미디어가 필요합니다.',
+        });
+        return;
+    }
 
-        console.log(`[채팅][전송요청] user=${user.userId}, room=${dto.roomId}, content=${dto.content}`);
+    let message;
+    try {
+        message = await this.chatService.createMessage(
+        dto.roomId,
+        user.userId,
+        dto.content,
+        dto.medias,
+        );
+    } catch (error) {
+        client.emit('chat:error', { message: error.message });
+        return;
+    }
+
+    this.server.to(dto.roomId).emit('chat:message', message);
     }
 
     @SubscribeMessage('chat:update')
@@ -155,5 +171,33 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         console.log(`[채팅][삭제] user=${user.userId}, message=${deletedMessage.id}`);
     }
+
+
+    @SubscribeMessage('chat:media:delete')
+    async handleDeleteMedia(@MessageBody() dto: DeleteMediaDto,@ConnectedSocket() client: Socket) {
+    console.log('[MEDIA DELETE RECEIVED]', dto);
+    const user = client.data.user;
+    console.log(user)
+  if (!user?.userId) {
+    client.emit('chat:error', { message: '로그인이 필요합니다' });
+    return;
+  }
+
+  try {
+    const result = await this.chatService.deleteMessageMedia(
+      dto.mediaId,
+      user.userId,
+    );
+
+
+    this.server.to(result.roomId).emit('chat:media:deleted', {
+      messageId: result.messageId,
+      mediaId: result.mediaId,
+    });
+  } catch (error) {
+    client.emit('chat:error', { message: error.message });
+  }
+    }
+
 
 }

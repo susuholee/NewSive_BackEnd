@@ -1,12 +1,20 @@
-import { IsString, IsNotEmpty, MaxLength } from "class-validator";
+import {IsString,IsOptional,MaxLength,IsArray} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateMessageDto {
   @IsString()
-  @IsNotEmpty()
   roomId: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(1000)
-  content: string;
+  content?: string;
+
+  @IsOptional()
+  @IsArray()
+  @Type(() => Object)
+  medias?: {
+    type: 'IMAGE' | 'VIDEO';
+    url: string;
+  }[];
 }

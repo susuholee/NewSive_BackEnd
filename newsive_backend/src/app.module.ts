@@ -11,6 +11,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { NewsModule } from './modules/news/news.module';
 import { WeatherModule } from './modules/weather/weather.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     SocketModule,
     NewsModule,
     WeatherModule,
+    UploadModule
   ],
 })
 export class AppModule {}

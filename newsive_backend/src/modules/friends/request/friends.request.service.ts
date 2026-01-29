@@ -10,7 +10,7 @@ export class FriendRequestsService {
   constructor(private readonly prisma : PrismaService, private readonly notificationService : NotificationService) {}
 
 
-   async createFriendRequest(userId: number, friendUserId: number) {
+    async createFriendRequest(userId: number, friendUserId: number) {
   if (userId === friendUserId) {
     throw new BadRequestException('자기 자신에게는 친구요청을 보낼 수 없습니다');
   }
@@ -98,7 +98,7 @@ export class FriendRequestsService {
   });
 
   return request;
-}
+    }
 
 
 
