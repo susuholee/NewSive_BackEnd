@@ -12,7 +12,7 @@ export const chatMediaMulterOptions = {
     },
   }),
   limits: {
-    fileSize: 20 * 1024 * 1024, // 20MB
+    fileSize: 20 * 1024 * 1024, 
   },
   fileFilter: (_, file, callback) => {
     if (

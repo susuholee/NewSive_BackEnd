@@ -1,4 +1,4 @@
-import { Controller,Post,UploadedFile,UseInterceptors,BadRequestException} from '@nestjs/common';
+import { Controller, Post, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { chatMediaMulterOptions } from '../../common/upload/chat_media.multer';
 import { Multer } from "multer";
