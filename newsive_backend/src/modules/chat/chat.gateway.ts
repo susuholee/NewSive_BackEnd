@@ -23,8 +23,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     constructor(private readonly chatService: ChatService,  private readonly wsJwtAuthService: WsJwtAuthService) {}
 
     handleConnection(client: Socket) {
-        console.log('채팅 시스템 연결중....' , client.id);
-
         const user = this.wsJwtAuthService.authenticate(client);
         
         if (!user) {
@@ -37,16 +35,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     handleDisconnect(client: Socket) {
-        console.log("채팅 시스템 연결 종료...", client.id);
     }
 
     @SubscribeMessage('chat:join')
     async handleJoin(@MessageBody() dto: JoinRoomDto, @ConnectedSocket() client: Socket){
         const user = client.data.user;
         const peerUserId = Number(dto.peerUserId);
-        console.log('뭐가 찍히는지', client.data.user);
-
-        console.log('chat:join 들어옴', dto, client.id);
         if(!user?.userId) {
             client.emit('chat:error', {message: "로그인이 필요합니다"});
             return;
@@ -71,7 +65,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         client.join(room.id);
-        console.log(`[채팅][입장] user=${user.userId}, room=${room.id}`);
 
         const peerMember = room.members.find((m) => m.userId === peerUserId);
         if (!peerMember) {
@@ -146,8 +139,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         this.server.to(updatedMessage.roomId).emit('chat:updated', {messageId: updatedMessage.id, newContent: updatedMessage.content, editedAt: updatedMessage.editedAt});
-
-        console.log(`[채팅][수정] user=${user.userId}, message=${updatedMessage.id}, content=${updatedMessage.content}`);
     }
 
     @SubscribeMessage('chat:delete')
@@ -169,15 +160,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         this.server.to(deletedMessage.roomId).emit('chat:deleted', {messageId: deletedMessage.id});
 
-        console.log(`[채팅][삭제] user=${user.userId}, message=${deletedMessage.id}`);
     }
 
 
     @SubscribeMessage('chat:media:delete')
     async handleDeleteMedia(@MessageBody() dto: DeleteMediaDto,@ConnectedSocket() client: Socket) {
-    console.log('[MEDIA DELETE RECEIVED]', dto);
     const user = client.data.user;
-    console.log(user)
   if (!user?.userId) {
     client.emit('chat:error', { message: '로그인이 필요합니다' });
     return;

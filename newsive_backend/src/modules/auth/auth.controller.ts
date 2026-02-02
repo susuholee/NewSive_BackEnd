@@ -16,8 +16,6 @@ export class AuthController {
     @Post('signup')
     @UseInterceptors(FileInterceptor('profileImage', profileImageMulterOptions))
     async signup( @Body() dto: CreateUserDto, @UploadedFile() file?: Multer.File,) {
-        console.log('file:', file);
-          console.log('body:', dto);
         return  await this.authService.createUser(dto, file);
     }
 

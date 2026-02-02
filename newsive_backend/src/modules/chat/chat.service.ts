@@ -265,7 +265,6 @@ export class ChatService {
         throw new NotFoundException('미디어를 찾을 수 없습니다.');
       }
 
-      // 메시지 작성자만 가능
       if (media.message.senderId !== userId) {
         throw new ForbiddenException('본인 메시지의 미디어만 삭제할 수 있습니다.');
       }

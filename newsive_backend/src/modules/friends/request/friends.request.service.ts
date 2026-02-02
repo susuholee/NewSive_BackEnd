@@ -137,7 +137,7 @@ export class FriendRequestsService {
     }
 
 
-    // 보낸 요청 조회
+  
     async getSentRequests(userId: number) {
       const requests = await this.prisma.friendRequest.findMany({
         where: {
@@ -176,7 +176,7 @@ export class FriendRequestsService {
     }
 
 
-    // 수락한 요청
+  
     async acceptFriendRequest(requestId: number, userId: number) {
   const request = await this.prisma.friendRequest.findUnique({
     where: { id: requestId },
@@ -234,7 +234,7 @@ export class FriendRequestsService {
     }
 
 
-    // 거절한 요청
+
     async rejectFriendRequest(requestId: number, userId: number) {
     const request = await this.prisma.friendRequest.findUnique({
       where: { id: requestId },
@@ -244,17 +244,17 @@ export class FriendRequestsService {
       throw new BadRequestException('친구 요청이 존재하지 않습니다');
     }
 
-    // 내가 받은 요청인지 확인
+
     if (request.friendUserId !== userId) {
       throw new BadRequestException('요청을 처리할 권한이 없습니다');
     }
 
-    // 이미 처리된 요청인지 확인
+
     if (request.status !== 'PENDING') {
       throw new BadRequestException('이미 처리된 요청입니다');
     }
 
-    // 상태 변경 -> 요청 실패
+  
     return this.prisma.friendRequest.update({
       where: { id: requestId },
       data: { status: 'REJECTED' },
@@ -347,7 +347,7 @@ export class FriendRequestsService {
   });
     }
 
-    // 요청 취소
+   
     async cancelFriendRequest(requestId: number, userId: number) {
       const request = await this.prisma.friendRequest.findUnique({
         where: { id: requestId },

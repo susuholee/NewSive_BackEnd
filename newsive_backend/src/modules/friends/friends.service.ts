@@ -43,7 +43,7 @@ return friends.map((f) => {
 
 
 
-  // 친구 추가 로직
+
   async addFriend(userId: number, friendUserId: number) {
 
     if (!userId || !friendUserId) {
@@ -51,12 +51,12 @@ return friends.map((f) => {
     }
 
 
-    // 본인 추가 방지
+ 
     if (userId === friendUserId) {
       throw new BadRequestException('자기 자신을 친구로 추가할 수 없습니다.');
     }
 
-    // 상대 유저 존재 여부 확인
+
     const targetUser = await this.prisma.user.findUnique({
       where: { id: friendUserId },
     });
@@ -65,7 +65,7 @@ return friends.map((f) => {
       throw new NotFoundException('존재하지 않는 유저입니다.');
     }
 
-    // 이미 추가된 유저인지 확인
+  
     const AleadyUser = await this.prisma.friend.findUnique({
       where: {
         userId_friendUserId: {
@@ -79,7 +79,7 @@ return friends.map((f) => {
       throw new BadRequestException('이미 추가된 유저입니다.');
     }
 
-    // 트랜잭션 처리 (친구 추가 <--> 친구 관리)
+
     await this.prisma.$transaction([
       this.prisma.friend.create({
         data: {
@@ -99,7 +99,7 @@ return friends.map((f) => {
   }
 
 
-  // 친구 삭제
+
   async removeFriend(userId: number, friendUserId: number) {
     await this.prisma.friend.deleteMany({
       where: {
