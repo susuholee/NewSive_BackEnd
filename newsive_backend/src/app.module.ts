@@ -12,9 +12,14 @@ import { NewsModule } from './modules/news/news.module';
 import { WeatherModule } from './modules/weather/weather.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { UploadModule } from './modules/upload/upload.module';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET,
+    }),
 
     ConfigModule.forRoot({
       isGlobal : true,
