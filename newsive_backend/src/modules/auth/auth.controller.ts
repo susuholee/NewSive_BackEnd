@@ -34,8 +34,8 @@ export class AuthController {
     async logout(@Res({passthrough : true}) res : Response) {
         res.clearCookie('accessToken', {
             httpOnly : true,
-            sameSite : 'lax',
-            secure : false,
+            secure: true,    
+            sameSite: "none",    
         });
 
         return {message : "로그아웃 성공"}
