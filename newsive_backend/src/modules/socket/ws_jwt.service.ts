@@ -8,6 +8,7 @@ export class WsJwtAuthService {
 
   authenticate(client: Socket) {
     const cookie = client.handshake.headers.cookie;
+     console.log("SOCKET COOKIE:", cookie);
     if (!cookie) {
       return null;
     }
