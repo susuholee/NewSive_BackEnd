@@ -23,7 +23,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     constructor(private readonly chatService: ChatService,  private readonly wsJwtAuthService: WsJwtAuthService) {}
 
     handleConnection(client: Socket) {
-        console.log("HANDSHAKE HEADERS:", client.handshake.headers);
         const user = this.wsJwtAuthService.authenticate(client);
         
         if (!user) {
@@ -40,6 +39,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('chat:join')
     async handleJoin(@MessageBody() dto: JoinRoomDto, @ConnectedSocket() client: Socket){
+        console.log("chat:join received 정보", dto);
         const user = client.data.user;
         const peerUserId = Number(dto.peerUserId);
         if(!user?.userId) {
