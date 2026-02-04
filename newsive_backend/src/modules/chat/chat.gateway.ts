@@ -12,7 +12,7 @@ import { DeleteMediaDto } from "../users/dto/delete_media.dto";
 @WebSocketGateway({
     namespace : '/chat',
     cors : {
-        origin: "https://newsive.store", 
+        origin: "https://www.newsive.store", 
         credentials : true,
     }
 })
