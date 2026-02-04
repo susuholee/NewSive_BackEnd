@@ -24,7 +24,8 @@ export class AuthController {
         const {accessToken, user} = await this.authService.login(dto.username, dto.password);
         res.cookie('accessToken', accessToken, {
         httpOnly: true,
-        secure: false,
+        sameSite: "none",
+        domain: ".newsive.store",
         maxAge: 1000 * 60 * 60,
     });
         return {user}

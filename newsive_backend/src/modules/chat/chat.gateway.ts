@@ -23,6 +23,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     constructor(private readonly chatService: ChatService,  private readonly wsJwtAuthService: WsJwtAuthService) {}
 
     handleConnection(client: Socket) {
+        console.log("WS cookie header:", client.handshake.headers.cookie);
         const user = this.wsJwtAuthService.authenticate(client);
         
         if (!user) {
