@@ -1,1 +1,1 @@
-export const DEFAULT_PROFILE_IMAGE_URL = process.env.DEFAULT_PROFILE_IMAGE_URL || '/images/basic_profile_img.jpg';
+export const DEFAULT_PROFILE_IMAGE_URL = process.env.DEFAULT_PROFILE_IMAGE_URL || 'images/basic_profile_img.jpg';
