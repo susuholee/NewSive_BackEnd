@@ -1,8 +1,6 @@
 import {BadRequestException, ConflictException,Injectable, NotFoundException, UnauthorizedException} from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { UpdateNotificationSettingDto } from './dto/update_notification_setting.dto';
-import { DEFAULT_PROFILE_IMAGE_URL } from 'src/common/constants/profile.constants';
 import { mapUser } from 'src/common/utils/user.mapper';
 
 @Injectable()
@@ -30,16 +28,11 @@ export class UsersService {
   async findMyInfo(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        setting: true,
-      },
     });
 
     if (!user) {
       throw new NotFoundException('유저를 찾을 수 없습니다.');
     }
-
-    const setting = await this.ensureUserSetting(userId);
 
     const BASE_URL = process.env.SERVER_URL!; 
     const DEFAULT_PATH = process.env.DEFAULT_PROFILE_IMAGE_URL!; 
@@ -51,7 +44,6 @@ export class UsersService {
       birthday: user.birthday,
       gender: user.gender,
       profileImgUrl: user.profileImgUrl ? `${BASE_URL}/${user.profileImgUrl}`: `${BASE_URL}/${DEFAULT_PATH}`,
-      allowNotification: setting.allowNotification,
     };
   }
 
@@ -113,10 +105,6 @@ export class UsersService {
   }
 
   await this.prisma.$transaction([
-    this.prisma.userSetting.deleteMany({
-      where: { userId },
-    }),
-
 
     this.prisma.notification.deleteMany({
       where: { userId },
@@ -131,6 +119,7 @@ export class UsersService {
       },
     }),
 
+
     this.prisma.user.delete({
       where: { id: userId },
     }),
@@ -139,68 +128,8 @@ export class UsersService {
   return {
     message: '회원탈퇴가 완료되었습니다.',
   };
-  }
+}
 
-  async ensureUserSetting(userId: number) {
-    const setting = await this.prisma.userSetting.findUnique({
-      where : { userId},
-    });
-
-    if (setting) return setting;
-
-    return this.prisma.userSetting.create({
-      data: {userId},
-    });
-  }
-
-  async getNotificationSetting(userId: number) {
-
-    const user = await this.prisma.user.findUnique({
-      where : { id : userId},
-      select : { id : true},
-    });
-
-    if(!user){
-      throw new NotFoundException('유저를 찾을 수 없습니다');
-    }
-
-    const setting = await this.ensureUserSetting(userId);
-
-    return {
-      allowNotification : setting.allowNotification,
-    };
-  }
-
-  async updateNotificationSetting(userId: number, dto : UpdateNotificationSettingDto){
-    const user = await this.prisma.user.findUnique({
-      where : {id: userId},
-      select :  {id: true},
-    });
-
-    if(!user){
-      throw new NotFoundException('유저를 찾을 수 없습니다.');
-    }
-
-    await this.ensureUserSetting(userId);
-
-     return this.prisma.userSetting.update({
-    where: { userId },
-    data: {
-      ...(dto.allowNotification !== undefined && {
-        allowNotification: dto.allowNotification,
-      }),
-      ...(dto.allowBreakingNews !== undefined && {
-        allowBreakingNews: dto.allowBreakingNews,
-      }),
-      ...(dto.allowKeywordAlert !== undefined && {
-        allowKeywordAlert: dto.allowKeywordAlert,
-      }),
-      ...(dto.defaultRegion !== undefined && {
-        defaultRegion: dto.defaultRegion,
-      }),
-    },
-  });
-  }
 
 
   async updateProfileImage(userId: number, profileImgPath: string | null) {

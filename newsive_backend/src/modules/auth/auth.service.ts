@@ -96,12 +96,7 @@ export class AuthService {
       data: userData,
     });
 
-    await tx.userSetting.create({
-      data: {
-        userId: user.id,
-      },
-    });
-
+  
     return user;
   });
 
